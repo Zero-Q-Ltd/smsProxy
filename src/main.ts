@@ -27,13 +27,6 @@ function onRequest(client_req, client_res) {
     } catch{
       console.error("headers not present")
     }
-    let host
-
-    if (body && body.provider) {
-      host = body.provider === "ujumbe" ? "ujumbesms.co.ke" : "api.africastalking.com"
-    } else {
-      host = "google.com"
-    }
     try {
       delete body.provider
     } catch{
@@ -41,13 +34,12 @@ function onRequest(client_req, client_res) {
     }
     headers["content-length"] = JSON.stringify(body).length
 
-    console.log(host)
     var options = {
       port: 443,
       path: url,
       method,
       headers,
-      host,
+      host: body.target,
     };
     console.log(options)
     console.log(JSON.stringify(body))
