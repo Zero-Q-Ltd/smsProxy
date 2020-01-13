@@ -1,8 +1,11 @@
 const https = require('https')
 const http = require('http')
 var util = require('util')
-http.createServer(onRequest).listen(3000);
 
+const PORT = process.env.PORT || 3000;
+
+http.createServer(onRequest).listen(PORT);
+console.log(PORT)
 function onRequest(client_req, client_res) {
   const { headers, method, url } = client_req;
   let buffer = [];
