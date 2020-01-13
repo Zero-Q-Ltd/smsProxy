@@ -1,32 +1,107 @@
-/**
- * Some predefined delays (in milliseconds).
- */
-export enum Delays {
-  Short = 500,
-  Medium = 2000,
-  Long = 5000,
+const https = require('https')
+const http = require('http')
+var util = require('util')
+http.createServer(onRequest).listen(3000);
+
+function onRequest(client_req, client_res) {
+  const { headers, method, url } = client_req;
+  let buffer = [];
+  client_req.on('error', (err) => {
+    console.error(err);
+  }).on('data', (chunk) => {
+    // console.log(JSON.parse(chunk))
+    buffer.push(chunk);
+  }).on('end', () => {
+    let body
+    if (buffer.length > 0) {
+      body = JSON.parse(Buffer.concat(buffer).toString())
+    }
+    // At this point, we have the headers, method, url and body, and can now
+    // do whatever we need to in order to respond to this request.
+    try {
+      delete headers["x-forwarded-for"]
+      delete headers["x-forwarded-proto"]
+      delete headers["host"]
+    } catch{
+      console.error("headers not present")
+    }
+    let host
+
+    if (body && body.provider) {
+      host = body.provider === "ujumbe" ? "ujumbesms.co.ke" : "api.africastalking.com"
+    } else {
+      host = "google.com"
+    }
+    try {
+      delete body.provider
+    } catch{
+      console.error("provider not present")
+    }
+    headers["content-length"] = JSON.stringify(body).length
+
+    console.log(host)
+    var options = {
+      port: 443,
+      path: url,
+      method,
+      headers,
+      host,
+    };
+    console.log(options)
+    console.log(JSON.stringify(body))
+
+    var proxy = https.request(options, function (res) {
+      client_res.writeHead(res.statusCode, res.headers)
+      res.pipe(client_res, {
+        end: true
+      });
+    });
+    proxy.write(JSON.stringify(body))
+    client_req.pipe(proxy, {
+      end: true
+    });
+  });
+
 }
 
-/**
- * Returns a Promise<string> that resolves after given time.
- *
- * @param {string} name - A name.
- * @param {number=} [delay=Delays.Medium] - Number of milliseconds to delay resolution of the Promise.
- * @returns {Promise<string>}
- */
-function delayedHello(
-  name: string,
-  delay: number = Delays.Medium,
-): Promise<string> {
-  return new Promise((resolve: (value?: string) => void) =>
-    setTimeout(() => resolve(`Hello, ${name}`), delay),
-  );
-}
+// var options = {
+//   host: "ujumbesms.co.ke",
+//   path: "/api/messaging",
+//   method: "POST",
+//   port: 443,
+//   headers: {
+//     "X-Authorization": "YWI0YTkzMzUxYTJjYWFjYmU5Zjk2Y2ZkZmZlMDU4",
+//     "Accept": "application/json",
+//     "email": "kisinga@zero-q.com",
+//     "Content-Type": "application/json"
+//   },
+// };
+// console.log(options)
 
-// Below are examples of using ESLint errors suppression
-// Here it is suppressing missing return type definitions for greeter function
+// var proxy = https.request(options, (res) => {
+//   console.log(`statusCode: ${res.statusCode}`)
+//   let buffer = [];
+//   res.on('data', (d) => {
+//     console.log('BODY: ' + d);
+//   })
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-export async function greeter(name: string) {
-  return await delayedHello(name, Delays.Long);
-}
+//   console.log(buffer)
+
+// })
+
+// proxy.on('error', (error) => {
+//   console.error(error)
+// })
+
+// proxy.write(JSON.stringify({
+//   data: [
+//     {
+//       "message_bag": {
+//         "numbers": "0702604380",
+//         "message": "Messagefromthefirstbag",
+//         "sender": "SnowPharm"
+//       }
+//     },
+//   ],
+// }))
+// proxy.end()
